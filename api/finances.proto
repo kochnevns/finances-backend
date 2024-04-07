@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package finances;
+
+option go_package = "finances.v1";
+
+// Auth is service for managing permissions and roles.
+service Finances {
+  // Register registers a new user.
+  rpc Expense (ExpenseRequest) returns (ExpenseResponse);
+}
+
+message ExpenseRequest {
+  int64 amount = 1;
+  string who = 2;
+  string category = 3;
+  string date = 4;
+}
+
+message ExpenseResponse {
+  bool ok = 1;  // Indicates whether the user is an admin.
+}
