@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	pb "github.com/kochnevns/finances-backend/gen/go/auth"
+	pb "github.com/kochnevns/finances-protos/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

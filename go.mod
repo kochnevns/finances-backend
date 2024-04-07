@@ -1,8 +1,9 @@
 module github.com/kochnevns/finances-backend
 
-go 1.21.9
+go 1.22.0
 
 require (
+	github.com/kochnevns/finances-protos v0.0.1
 	google.golang.org/grpc v1.63.0
 	google.golang.org/protobuf v1.33.0
 )
