@@ -1,42 +1,64 @@
-// Package main implements a client for Greeter service.
 package main
 
 import (
-	"context"
-	"flag"
-	"log"
-	"time"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 
-	pb "github.com/kochnevns/finances-protos/auth"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/kochnevns/finances-backend/internal/app"
+	"github.com/kochnevns/finances-backend/internal/config"
 )
 
 const (
-	defaultName = "world"
-)
-
-var (
-	addr = flag.String("addr", "localhost:8080", "the address to connect to")
-	name = flag.String("name", defaultName, "Name to greet")
+	envLocal = "local"
+	envDev   = "dev"
+	envProd  = "prod"
 )
 
 func main() {
-	flag.Parse()
-	// Set up a connection to the server.
-	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := pb.NewAuthClient(conn)
+	cfg := config.MustLoad()
 
-	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	r, err := c.IsAdmin(ctx, &pb.IsAdminRequest{UserId: 1})
-	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+	log := setupLogger(cfg.Env)
+
+	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath)
+
+	go func() {
+		application.GRPCServer.MustRun()
+	}()
+
+	go func() {
+		application.GRPCServer.MustRunHTTP()
+	}()
+
+	// Graceful shutdown
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+
+	<-stop
+
+	application.GRPCServer.Stop()
+	log.Info("Gracefully stopped")
+}
+
+func setupLogger(env string) *slog.Logger {
+	var log *slog.Logger
+
+	switch env {
+	case envLocal:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envDev:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envProd:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
 	}
-	log.Printf("Response: %s", r.GetIsAdmin())
+
+	return log
 }

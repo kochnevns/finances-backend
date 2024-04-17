@@ -1,0 +1,7 @@
+env: "local"
+
+storage_path: "./db/expenses.db.sqlite"
+
+grpc:
+  port: 8080
+  timeout: 10h
