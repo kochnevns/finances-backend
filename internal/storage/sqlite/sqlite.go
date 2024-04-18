@@ -32,7 +32,7 @@ func (s *Storage) Stop() error {
 	return s.db.Close()
 }
 
-func (s *Storage) GetCategory(ctx context.Context, id int64) (*models.Category, error) {
+func (s *Storage) GetCategory(_ context.Context, id int64) (*models.Category, error) {
 	const op = "storage.sqlite.GetCategory"
 	stmt, err := s.db.Prepare("SELECT id, name FROM Categories WHERE id =?")
 
@@ -59,6 +59,14 @@ func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error
 	const op = "storage.sqlite.SaveExpense"
 
 	category, err := s.GetCategory(ctx, expense.CategoryID)
+
+	if category == nil {
+		category = &models.Category{
+			ID:       0,
+			Name:     "TEST",
+			ImageURL: "",
+		}
+	}
 
 	stmt, err := s.db.Prepare("INSERT INTO Expenses(date, description, amount, category_id) VALUES(?,?,?,?)")
 
@@ -108,7 +116,10 @@ func (s *Storage) ListExpenses(ctx context.Context) ([]models.Expense, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
+		fmt.Println(expense)
+		cat, _ := s.GetCategory(ctx, expense.CategoryID)
 
+		expense.Category = cat.Name
 		expenses = append(expenses, expense)
 	}
 

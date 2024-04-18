@@ -47,6 +47,7 @@ func (s *serverAPI) Expense(
 	ctx context.Context,
 	in *financesgrpcsrv.ExpenseRequest,
 ) (*financesgrpcsrv.ExpenseResponse, error) {
+
 	err := s.finances.Expense(
 		ctx,
 		in.Who,
