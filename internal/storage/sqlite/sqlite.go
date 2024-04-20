@@ -55,6 +55,53 @@ func (s *Storage) GetCategory(_ context.Context, id int64) (*models.Category, er
 	return &category, nil
 }
 
+func (s *Storage) ListCategories(ctx context.Context) ([]models.CategoryReport, error) {
+	const op = "storage.sqlite.ListCategories"
+	stmt, err := s.db.Prepare(`
+	SELECT sum(amount) AS cat_amount, Categories.name as cat_name
+	FROM Expenses JOIN Categories ON Expenses.category_id = Categories.id
+	GROUP BY Categories.name;`)
+
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var categories []models.CategoryReport
+
+	rows, err := stmt.QueryContext(ctx)
+
+	for rows.Next() {
+		var category models.CategoryReport
+		err = rows.Scan(&category.Amount, &category.Name)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		categories = append(categories, category)
+	}
+
+	return categories, nil
+}
+
+func (s *Storage) Total() (int64, error) {
+	const op = "storage.sqlite.TotalAmount"
+
+	stmt, err := s.db.Prepare("SELECT sum(amount) FROM Expenses")
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+	defer stmt.Close() // nolint: errcheck
+
+	var totalAmount int64
+
+	err = stmt.QueryRow().Scan(&totalAmount)
+
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return totalAmount, nil
+}
+
 func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error {
 	const op = "storage.sqlite.SaveExpense"
 

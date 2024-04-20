@@ -16,6 +16,20 @@ type Expense struct {
 	Category    string // "food", "groceries", "transport", "misc"
 }
 
+type ReportFilter int32
+
+const (
+	Week  ReportFilter = 0
+	Month ReportFilter = 1
+	Year  ReportFilter = 2
+)
+
+type CategoryReport struct {
+	Category string
+	Amount   int64
+	Percent  float64
+}
+
 type Finances interface {
 	Expense(
 		ctx context.Context,
@@ -30,6 +44,7 @@ type Finances interface {
 
 	CreateCategory(context.Context, string) (string, error)
 	CategoriesList(context.Context, string) (string, error)
+	Report(context.Context, ReportFilter) (int64, []CategoryReport, error)
 }
 
 type serverAPI struct {
@@ -41,6 +56,30 @@ func Register(gRPCServer *grpc.Server, finances Finances) {
 	financesgrpcsrv.RegisterFinancesServer(gRPCServer, &serverAPI{
 		finances: finances,
 	})
+}
+
+func (s *serverAPI) Report(ctx context.Context, in *financesgrpcsrv.ReportRequest) (*financesgrpcsrv.ReportResponse, error) {
+	total, report, err := s.finances.Report(ctx, ReportFilter(in.Type))
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	var categories []*financesgrpcsrv.ReportCategory // TODO: make this an array
+
+	for _, category := range report {
+		categories = append(categories, &financesgrpcsrv.ReportCategory{
+			Name:    category.Category,
+			Amount:  category.Amount,
+			Percent: category.Amount * 100 / total,
+		})
+	}
+
+	rsp := &financesgrpcsrv.ReportResponse{
+		Total:      total,
+		Categories: categories,
+	}
+
+	return rsp, nil
 }
 
 func (s *serverAPI) Expense(

@@ -8,9 +8,10 @@ import (
 )
 
 type Finances struct {
-	log              *slog.Logger
-	expenseSaver     ExpensesSaver
-	expensesProvider ExpensesProvider
+	log                      *slog.Logger
+	expenseSaver             ExpensesSaver
+	expensesProvider         ExpensesProvider
+	categoriesReportProvider CategoriesReportProvider
 }
 
 //go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=URLSaver
@@ -22,15 +23,22 @@ type ExpensesProvider interface {
 	ListExpenses(ctx context.Context) ([]models.Expense, error)
 }
 
+type CategoriesReportProvider interface {
+	ListCategories(ctx context.Context) ([]models.CategoryReport, error)
+	Total() (int64, error)
+}
+
 func New(
 	log *slog.Logger,
 	expenseSaver ExpensesSaver, // TODO: use mock
 	expensesProvider ExpensesProvider, // TODO: use mock
+	categoriesProvider CategoriesReportProvider, // TODO: use mock
 ) *Finances {
 	return &Finances{
-		expenseSaver:     expenseSaver,
-		expensesProvider: expensesProvider,
-		log:              log,
+		expenseSaver:             expenseSaver,
+		expensesProvider:         expensesProvider,
+		categoriesReportProvider: categoriesProvider,
+		log:                      log,
 	}
 }
 
@@ -86,3 +94,30 @@ func (f *Finances) ExpensesList(
 func (f *Finances) CategoriesList(ctx context.Context, _ string) (string, error) { return "", nil }
 
 func (f *Finances) CreateCategory(ctx context.Context, _ string) (string, error) { return "", nil }
+
+func (f *Finances) Report(ctx context.Context, _ financesgrpc.ReportFilter) (int64, []financesgrpc.CategoryReport, error) {
+	cts, err := f.categoriesReportProvider.ListCategories(ctx)
+
+	if err != nil {
+		f.log.Error(err.Error())
+		return 0, nil, err
+	}
+
+	total, err := f.categoriesReportProvider.Total()
+	if err != nil {
+		f.log.Error(err.Error())
+		return 0, nil, err
+	}
+
+	var cts2 []financesgrpc.CategoryReport
+
+	for _, ct := range cts {
+		cts2 = append(cts2, financesgrpc.CategoryReport{
+			Category: ct.Name,
+			Amount:   ct.Amount,
+		})
+	}
+	return total, cts2, nil
+
+	return 0, nil, nil
+}
