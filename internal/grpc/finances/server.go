@@ -30,6 +30,11 @@ type CategoryReport struct {
 	Percent  float64
 }
 
+type Category struct {
+	ID   int64
+	Name string // "food", "groceries", "transport", "misc"
+}
+
 type Finances interface {
 	Expense(
 		ctx context.Context,
@@ -43,7 +48,7 @@ type Finances interface {
 	) (list []Expense, err error)
 
 	CreateCategory(context.Context, string) (string, error)
-	CategoriesList(context.Context, string) (string, error)
+	CategoriesList(context.Context) ([]Category, error)
 	Report(context.Context, ReportFilter) (int64, []CategoryReport, error)
 }
 
@@ -102,7 +107,7 @@ func (s *serverAPI) Expense(
 	return &financesgrpcsrv.ExpenseResponse{}, nil
 }
 
-func (s *serverAPI) ExpensesList(ctx context.Context, req *financesgrpcsrv.ExpensesListRequest) (*financesgrpcsrv.ExpensesListResponse, error) {
+func (s *serverAPI) ExpensesList(ctx context.Context, _ *financesgrpcsrv.ExpensesListRequest) (*financesgrpcsrv.ExpensesListResponse, error) {
 	list, err := s.finances.ExpensesList(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -125,10 +130,24 @@ func (s *serverAPI) ExpensesList(ctx context.Context, req *financesgrpcsrv.Expen
 	return rsp, nil
 }
 
-//func (s *serverAPI) CreateCategory(ctx context.Context, category string) (string, error) {
-//	return category, nil
-//}
-//
-//func (s *serverAPI) CategoriesList(ctx context.Context, category string) (string, error) {
-//	return category, nil
-//}
+//	func (s *serverAPI) CreateCategory(ctx context.Context, category string) (string, error) {
+//		return category, nil
+//	}
+func (s *serverAPI) CategoriesList(ctx context.Context, _ *financesgrpcsrv.CategoriesListRequest) (*financesgrpcsrv.CategoriesListResponse, error) {
+	categories, err := s.finances.CategoriesList(ctx)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	rsp := &financesgrpcsrv.CategoriesListResponse{
+		Categories: []*financesgrpcsrv.Category{},
+	}
+	for _, category := range categories {
+		rsp.Categories = append(rsp.Categories, &financesgrpcsrv.Category{
+			Name: category.Name,
+		})
+	}
+
+	return rsp, nil
+}

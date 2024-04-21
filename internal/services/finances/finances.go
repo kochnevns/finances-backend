@@ -12,6 +12,7 @@ type Finances struct {
 	expenseSaver             ExpensesSaver
 	expensesProvider         ExpensesProvider
 	categoriesReportProvider CategoriesReportProvider
+	categoriesProvider       CategoriesProvider
 }
 
 //go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=URLSaver
@@ -23,8 +24,12 @@ type ExpensesProvider interface {
 	ListExpenses(ctx context.Context) ([]models.Expense, error)
 }
 
+type CategoriesProvider interface {
+	ListCategories(ctx context.Context) ([]models.Category, error)
+}
+
 type CategoriesReportProvider interface {
-	ListCategories(ctx context.Context) ([]models.CategoryReport, error)
+	ListCategoriesReport(ctx context.Context) ([]models.CategoryReport, error)
 	Total() (int64, error)
 }
 
@@ -32,12 +37,14 @@ func New(
 	log *slog.Logger,
 	expenseSaver ExpensesSaver, // TODO: use mock
 	expensesProvider ExpensesProvider, // TODO: use mock
-	categoriesProvider CategoriesReportProvider, // TODO: use mock
+	categoriesReportProvider CategoriesReportProvider,
+	categoriesProvider CategoriesProvider, // TODO: use mock
 ) *Finances {
 	return &Finances{
 		expenseSaver:             expenseSaver,
 		expensesProvider:         expensesProvider,
-		categoriesReportProvider: categoriesProvider,
+		categoriesReportProvider: categoriesReportProvider,
+		categoriesProvider:       categoriesProvider,
 		log:                      log,
 	}
 }
@@ -91,12 +98,28 @@ func (f *Finances) ExpensesList(
 	return list, nil // TODO: return error
 }
 
-func (f *Finances) CategoriesList(ctx context.Context, _ string) (string, error) { return "", nil }
+func (f *Finances) CategoriesList(ctx context.Context) ([]financesgrpc.Category, error) {
+	categories, err := f.categoriesProvider.ListCategories(ctx)
+	if err != nil {
+		f.log.Error(err.Error())
+	}
+
+	var list []financesgrpc.Category
+	for _, c := range categories {
+		list = append(list, financesgrpc.Category{
+			Name: c.Name,
+			ID:   c.ID,
+		})
+	}
+
+	return list, nil
+
+}
 
 func (f *Finances) CreateCategory(ctx context.Context, _ string) (string, error) { return "", nil }
 
 func (f *Finances) Report(ctx context.Context, _ financesgrpc.ReportFilter) (int64, []financesgrpc.CategoryReport, error) {
-	cts, err := f.categoriesReportProvider.ListCategories(ctx)
+	cts, err := f.categoriesReportProvider.ListCategoriesReport(ctx)
 
 	if err != nil {
 		f.log.Error(err.Error())

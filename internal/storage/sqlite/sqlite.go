@@ -55,8 +55,8 @@ func (s *Storage) GetCategory(_ context.Context, id int64) (*models.Category, er
 	return &category, nil
 }
 
-func (s *Storage) ListCategories(ctx context.Context) ([]models.CategoryReport, error) {
-	const op = "storage.sqlite.ListCategories"
+func (s *Storage) ListCategoriesReport(ctx context.Context) ([]models.CategoryReport, error) {
+	const op = "storage.sqlite.ListCategoriesReport"
 	stmt, err := s.db.Prepare(`
 	SELECT sum(amount) AS cat_amount, Categories.name as cat_name
 	FROM Expenses JOIN Categories ON Expenses.category_id = Categories.id
@@ -171,4 +171,33 @@ func (s *Storage) ListExpenses(ctx context.Context) ([]models.Expense, error) {
 	}
 
 	return expenses, nil
+}
+func (s *Storage) ListCategories(ctx context.Context) ([]models.Category, error) {
+	const op = "storage.sqlite.CategoriesList"
+	stmt, err := s.db.Prepare("SELECT id, name FROM Categories")
+
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	defer stmt.Close()
+
+	var categories []models.Category
+	rows, err := stmt.QueryContext(ctx) // nolint: errcheck
+
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var category models.Category
+		err = rows.Scan(&category.ID, &category.Name)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		categories = append(categories, category)
+	}
+	return categories, nil
 }
