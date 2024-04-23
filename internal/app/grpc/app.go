@@ -3,12 +3,13 @@ package grpcapp
 import (
 	"context"
 	"fmt"
-	financesgrpc "github.com/kochnevns/finances-backend/internal/grpc/finances"
-	gw "github.com/kochnevns/finances-protos/finances"
-	"google.golang.org/grpc/credentials/insecure"
 	"log/slog"
 	"net"
 	"net/http"
+
+	financesgrpc "github.com/kochnevns/finances-backend/internal/grpc/finances"
+	gw "github.com/kochnevns/finances-protos/finances"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
@@ -65,7 +66,7 @@ func New(
 // This code is simple enough to be copied and not imported.
 func InterceptorLogger(l *slog.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
-		l.Log(ctx, slog.Level(lvl), msg, fields...)
+		l.Log(ctx, slog.Level(lvl), msg[:140], fields...)
 	})
 }
 

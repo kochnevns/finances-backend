@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/mattn/go-sqlite3"
 
 	"github.com/kochnevns/finances-backend/internal/models"
@@ -32,8 +33,8 @@ func (s *Storage) Stop() error {
 	return s.db.Close()
 }
 
-func (s *Storage) GetCategory(_ context.Context, id int64) (*models.Category, error) {
-	const op = "storage.sqlite.GetCategory"
+func (s *Storage) GetCategoryById(_ context.Context, id int64) (*models.Category, error) {
+	const op = "storage.sqlite.GetCategoryById"
 	stmt, err := s.db.Prepare("SELECT id, name FROM Categories WHERE id =?")
 
 	if err != nil {
@@ -52,6 +53,23 @@ func (s *Storage) GetCategory(_ context.Context, id int64) (*models.Category, er
 		}
 	}
 
+	return &category, nil
+}
+
+func (s *Storage) GetCategoryByName(_ context.Context, name string) (*models.Category, error) {
+	const op = "storage.sqlite.GetCategoryByName"
+	stmt, err := s.db.Prepare("SELECT id, name FROM Categories WHERE name =?")
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer stmt.Close()
+	var category models.Category
+	err = stmt.QueryRow(name).Scan(&category.ID, &category.Name)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, sql.ErrNoRows
+		}
+	}
 	return &category, nil
 }
 
@@ -105,7 +123,7 @@ func (s *Storage) Total() (int64, error) {
 func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error {
 	const op = "storage.sqlite.SaveExpense"
 
-	category, err := s.GetCategory(ctx, expense.CategoryID)
+	category, err := s.GetCategoryByName(ctx, expense.Category)
 
 	if category == nil {
 		category = &models.Category{
@@ -163,8 +181,7 @@ func (s *Storage) ListExpenses(ctx context.Context) ([]models.Expense, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		fmt.Println(expense)
-		cat, _ := s.GetCategory(ctx, expense.CategoryID)
+		cat, _ := s.GetCategoryById(ctx, expense.CategoryID)
 
 		expense.Category = cat.Name
 		expenses = append(expenses, expense)
