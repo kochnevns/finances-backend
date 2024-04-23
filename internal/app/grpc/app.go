@@ -66,7 +66,7 @@ func New(
 // This code is simple enough to be copied and not imported.
 func InterceptorLogger(l *slog.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
-		l.Log(ctx, slog.Level(lvl), msg[:140], fields...)
+		l.Log(ctx, slog.Level(lvl), msg, fields...)
 	})
 }
 
