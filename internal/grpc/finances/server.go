@@ -95,7 +95,7 @@ func (s *serverAPI) Expense(
 
 	err := s.finances.Expense(
 		ctx,
-		in.Who,
+		in.Description,
 		in.Amount,
 		in.Date,
 		in.Category,
