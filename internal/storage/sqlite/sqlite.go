@@ -86,7 +86,7 @@ func (s *Storage) ListCategoriesReport(ctx context.Context) ([]models.CategoryRe
 
 	var categories []models.CategoryReport
 
-	rows, err := stmt.QueryContext(ctx)
+	rows, _ := stmt.QueryContext(ctx)
 
 	for rows.Next() {
 		var category models.CategoryReport
@@ -123,7 +123,7 @@ func (s *Storage) Total() (int64, error) {
 func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error {
 	const op = "storage.sqlite.SaveExpense"
 
-	category, err := s.GetCategoryByName(ctx, expense.Category)
+	category, _ := s.GetCategoryByName(ctx, expense.Category)
 
 	if category == nil {
 		category = &models.Category{
@@ -154,17 +154,12 @@ func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error
 
 func (s *Storage) ListExpenses(ctx context.Context) ([]models.Expense, error) {
 	const op = "storage.sqlite.ListExpenses"
-	stmt, err := s.db.Prepare("SELECT id, date, description, amount, category_id FROM Expenses")
+	stmt, err := s.db.Prepare("SELECT id, date(date) as date, description, amount, category_id FROM Expenses WHERE date(date) IS NOT NULL")
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	defer func(stmt *sql.Stmt) {
-		err := stmt.Close()
-		if err != nil {
-			err = fmt.Errorf("%s: %w", op, err)
-		}
-	}(stmt) // nolint: errcheck
+	defer stmt.Close() // nolint: errcheck
 
 	var expenses []models.Expense
 	rows, err := stmt.Query() // nolint: errcheck

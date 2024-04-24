@@ -1,7 +1,9 @@
-env: "local"
+env: "prod"
 
 storage_path: "./db/expenses.db.sqlite"
 
 grpc:
   port: 8080
   timeout: 10h
+http:
+  port: 8082

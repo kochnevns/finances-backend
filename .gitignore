@@ -1,0 +1,6 @@
+db/expenses.db.sqlite
+.DS_Store
+.idea
+.vscode
+db/.DS_Store
+main

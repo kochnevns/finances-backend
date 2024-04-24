@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"net/http"
 
 	financesgrpc "github.com/kochnevns/finances-backend/internal/grpc/finances"
-	gw "github.com/kochnevns/finances-protos/finances"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime" //"github.com/grpc-ecosystem/grpc-gateway/v2/runtime
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery" //"github.com/grpc-ecosystem/grpc-gateway/v2/runtime
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,7 +31,7 @@ func New(
 	loggingOpts := []logging.Option{
 		logging.WithLogOnEvents(
 			//logging.StartCall, logging.FinishCall,
-			logging.PayloadReceived, logging.PayloadSent,
+			logging.StartCall, logging.LoggableEvent(logging.LevelError),
 		),
 		// Add any other option (check functions starting with logging.With).
 	}
@@ -77,12 +73,6 @@ func (a *App) MustRun() {
 	}
 }
 
-func (a *App) MustRunHTTP() {
-	if err := a.RunHTTP(); err != nil {
-		panic(err)
-	}
-}
-
 // Run runs gRPC server.
 func (a *App) Run() error {
 	const op = "grpcapp.Run"
@@ -96,30 +86,6 @@ func (a *App) Run() error {
 
 	if err := a.gRPCServer.Serve(l); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	return nil
-}
-
-func (a *App) RunHTTP() error {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	grpcServerEnpoint := fmt.Sprintf(":%d", a.port)
-
-	// Register gRPC server endpoint
-	// Note: Make sure the gRPC server is running properly and accessible
-	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	err := gw.RegisterFinancesHandlerFromEndpoint(ctx, mux, grpcServerEnpoint, opts)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("server listening at 8082")
-	if err := http.ListenAndServe(":8082", mux); err != nil {
-		return err
 	}
 
 	return nil

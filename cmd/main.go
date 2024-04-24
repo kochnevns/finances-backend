@@ -21,14 +21,14 @@ func main() {
 
 	log := setupLogger(cfg.Env)
 
-	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath)
+	application := app.New(log, cfg.GRPC.Port, cfg.HTTP.Port, cfg.StoragePath)
 
 	go func() {
 		application.GRPCServer.MustRun()
 	}()
 
 	go func() {
-		application.GRPCServer.MustRunHTTP()
+		application.HTTPServer.MustRunHTTP()
 	}()
 
 	// Graceful shutdown

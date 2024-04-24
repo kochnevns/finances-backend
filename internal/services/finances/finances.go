@@ -2,9 +2,10 @@ package finances
 
 import (
 	"context"
+	"log/slog"
+
 	financesgrpc "github.com/kochnevns/finances-backend/internal/grpc/finances"
 	"github.com/kochnevns/finances-backend/internal/models"
-	"log/slog"
 )
 
 type Finances struct {
@@ -141,6 +142,4 @@ func (f *Finances) Report(ctx context.Context, _ financesgrpc.ReportFilter) (int
 		})
 	}
 	return total, cts2, nil
-
-	return 0, nil, nil
 }
