@@ -2,6 +2,7 @@ package financesgrpc
 
 import (
 	"context"
+	"fmt"
 
 	financesgrpcsrv "github.com/kochnevns/finances-protos/finances"
 	"google.golang.org/grpc"
@@ -17,13 +18,17 @@ type Expense struct {
 	Category    string // "food", "groceries", "transport", "misc"
 }
 
-type ReportFilter int32
+type ReportFilter string
 
 const (
-	Week  ReportFilter = 0
-	Month ReportFilter = 1
-	Year  ReportFilter = 2
+	Week  ReportFilter = "week"
+	Month ReportFilter = "month"
+	Year  ReportFilter = "year" // TODO: make this an enum?
 )
+
+func (f ReportFilter) String() string {
+	return string(f)
+}
 
 type CategoryReport struct {
 	Category string
@@ -65,7 +70,8 @@ func Register(gRPCServer *grpc.Server, finances Finances) {
 }
 
 func (s *serverAPI) Report(ctx context.Context, in *financesgrpcsrv.ReportRequest) (*financesgrpcsrv.ReportResponse, error) {
-	total, report, err := s.finances.Report(ctx, ReportFilter(in.Type))
+	fmt.Print()
+	total, report, err := s.finances.Report(ctx, ReportFilter(in.GetType()))
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

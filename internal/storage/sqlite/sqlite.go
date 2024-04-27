@@ -73,12 +73,21 @@ func (s *Storage) GetCategoryByName(_ context.Context, name string) (*models.Cat
 	return &category, nil
 }
 
-func (s *Storage) ListCategoriesReport(ctx context.Context) ([]models.CategoryReport, error) {
+func (s *Storage) ListCategoriesReport(ctx context.Context, filter string) ([]models.CategoryReport, error) {
 	const op = "storage.sqlite.ListCategoriesReport"
-	stmt, err := s.db.Prepare(`
+	sql := `
 	SELECT sum(amount) AS cat_amount, Categories.name as cat_name
 	FROM Expenses JOIN Categories ON Expenses.category_id = Categories.id
-	GROUP BY Categories.name;`)
+	GROUP BY Categories.name;`
+
+	if filter == "month" {
+		sql = `
+		SELECT sum(amount) AS cat_amount, Categories.name as cat_name
+		FROM Expenses JOIN Categories ON Expenses.category_id = Categories.id
+		WHERE strftime('%m', date) = strftime('%m', datetime('now'))
+		GROUP BY Categories.name;`
+	}
+	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
