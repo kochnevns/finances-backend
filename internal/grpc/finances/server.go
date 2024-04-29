@@ -51,7 +51,8 @@ type Finances interface {
 	) (err error)
 	ExpensesList(
 		ctx context.Context,
-	) (list []Expense, err error)
+		category string,
+	) (list []Expense, totalAmount int64, err error)
 
 	CreateCategory(context.Context, string) (string, error)
 	CategoriesList(context.Context) ([]Category, error)
@@ -114,8 +115,10 @@ func (s *serverAPI) Expense(
 	return &financesgrpcsrv.ExpenseResponse{}, nil
 }
 
-func (s *serverAPI) ExpensesList(ctx context.Context, _ *financesgrpcsrv.ExpensesListRequest) (*financesgrpcsrv.ExpensesListResponse, error) {
-	list, err := s.finances.ExpensesList(ctx)
+func (s *serverAPI) ExpensesList(ctx context.Context, req *financesgrpcsrv.ExpensesListRequest) (*financesgrpcsrv.ExpensesListResponse, error) {
+
+	list, totalAmount, err := s.finances.ExpensesList(ctx, req.GetCategory())
+
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -133,6 +136,7 @@ func (s *serverAPI) ExpensesList(ctx context.Context, _ *financesgrpcsrv.Expense
 	}
 
 	rsp.Expenses = respList
+	rsp.Total = totalAmount
 
 	return rsp, nil
 }

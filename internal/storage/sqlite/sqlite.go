@@ -161,11 +161,23 @@ func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error
 	return nil
 }
 
-func (s *Storage) ListExpenses(ctx context.Context) ([]models.Expense, error) {
+func (s *Storage) ListExpenses(ctx context.Context, category string) ([]models.Expense, int, error) {
 	const op = "storage.sqlite.ListExpenses"
-	stmt, err := s.db.Prepare("SELECT id, date(date) as date, description, amount, category_id FROM Expenses WHERE date(date) IS NOT NULL")
+	sql := `
+	SELECT id, date(date) as date, description, amount, category_id FROM Expenses WHERE date(date) IS NOT NULL
+	ORDER BY date DESC LIMIT 30
+	`
+	total := 0
+	if category != "" {
+		sql = fmt.Sprintf(`
+		SELECT id, date(date) as date, description, amount, category_id FROM Expenses WHERE date(date) IS NOT NULL AND category_id = 
+		(SELECT id FROM Categories WHERE name = '%s')
+		ORDER BY date DESC;
+		`, category)
+	}
+	stmt, err := s.db.Prepare(sql) // nolint: errcheck, gosec
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, 0, fmt.Errorf("%s: %w", op, err)
 	}
 
 	defer stmt.Close() // nolint: errcheck
@@ -174,7 +186,7 @@ func (s *Storage) ListExpenses(ctx context.Context) ([]models.Expense, error) {
 	rows, err := stmt.Query() // nolint: errcheck
 
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, 0, fmt.Errorf("%s: %w", op, err)
 	}
 
 	defer rows.Close() // nolint: errcheck
@@ -183,15 +195,15 @@ func (s *Storage) ListExpenses(ctx context.Context) ([]models.Expense, error) {
 		var expense models.Expense
 		err = rows.Scan(&expense.ID, &expense.Date, &expense.Description, &expense.Amount, &expense.CategoryID)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", op, err)
+			return nil, 0, fmt.Errorf("%s: %w", op, err)
 		}
 		cat, _ := s.GetCategoryById(ctx, expense.CategoryID)
-
+		total += int(expense.Amount)
 		expense.Category = cat.Name
 		expenses = append(expenses, expense)
 	}
 
-	return expenses, nil
+	return expenses, total, nil
 }
 func (s *Storage) ListCategories(ctx context.Context) ([]models.Category, error) {
 	const op = "storage.sqlite.CategoriesList"

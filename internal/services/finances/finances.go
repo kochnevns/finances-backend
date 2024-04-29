@@ -22,7 +22,7 @@ type ExpensesSaver interface {
 }
 
 type ExpensesProvider interface {
-	ListExpenses(ctx context.Context) ([]models.Expense, error)
+	ListExpenses(ctx context.Context, category string) ([]models.Expense, int, error)
 }
 
 type CategoriesProvider interface {
@@ -79,13 +79,13 @@ func (f *Finances) Expense(
 }
 
 func (f *Finances) ExpensesList(
-	ctx context.Context,
-) (list []financesgrpc.Expense, err error) {
-	l, err := f.expensesProvider.ListExpenses(ctx)
+	ctx context.Context, category string,
+) (list []financesgrpc.Expense, total int64, err error) {
+	l, t, err := f.expensesProvider.ListExpenses(ctx, category)
 
 	if err != nil {
 		f.log.Error(err.Error())
-		return nil, err
+		return nil, 0, err
 	}
 
 	for _, e := range l {
@@ -96,7 +96,7 @@ func (f *Finances) ExpensesList(
 			Category:    e.Category,
 		})
 	}
-	return list, nil // TODO: return error
+	return list, int64(t), nil
 }
 
 func (f *Finances) CategoriesList(ctx context.Context) ([]financesgrpc.Category, error) {
