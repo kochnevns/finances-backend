@@ -78,13 +78,14 @@ func (s *Storage) ListCategoriesReport(ctx context.Context, filter string) ([]mo
 	sql := `
 	SELECT sum(amount) AS cat_amount, Categories.name as cat_name
 	FROM Expenses JOIN Categories ON Expenses.category_id = Categories.id
+	WHERE strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))
 	GROUP BY Categories.name;`
 
 	if filter == "month" {
 		sql = `
 		SELECT sum(amount) AS cat_amount, Categories.name as cat_name
 		FROM Expenses JOIN Categories ON Expenses.category_id = Categories.id
-		WHERE strftime('%m', date) = strftime('%m', datetime('now'))
+		WHERE strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))
 		GROUP BY Categories.name;`
 	}
 	stmt, err := s.db.Prepare(sql)

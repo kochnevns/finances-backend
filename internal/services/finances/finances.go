@@ -50,11 +50,6 @@ func New(
 	}
 }
 
-// Login checks if user with given credentials exists in the system and returns access token.
-//
-// If user exists, but password is incorrect, returns error.
-// If user doesn't exist, returns error.
-
 func (f *Finances) Expense(
 	ctx context.Context,
 	Description string,
