@@ -110,10 +110,13 @@ func (s *Storage) ListCategoriesReport(ctx context.Context, filter string) ([]mo
 	return categories, nil
 }
 
-func (s *Storage) Total() (int64, error) {
+func (s *Storage) Total(filter string) (int64, error) {
 	const op = "storage.sqlite.TotalAmount"
-
-	stmt, err := s.db.Prepare("SELECT sum(amount) FROM Expenses")
+	sql := `SELECT sum(amount) FROM Expenses`
+	if filter == "month" {
+		sql = `SELECT sum(amount) FROM Expenses WHERE strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))`
+	}
+	stmt, err := s.db.Prepare(sql)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
