@@ -114,7 +114,7 @@ func (s *Storage) Total(filter string) (int64, error) {
 	const op = "storage.sqlite.TotalAmount"
 	sql := `SELECT sum(amount) FROM Expenses`
 	if filter == "month" {
-		sql = `SELECT sum(amount) FROM Expenses WHERE strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))`
+		sql = `SELECT COALESCE(sum(amount), 0) FROM Expenses WHERE strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))`
 	}
 	stmt, err := s.db.Prepare(sql)
 	if err != nil {

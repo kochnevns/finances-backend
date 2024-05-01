@@ -71,8 +71,7 @@ func Register(gRPCServer *grpc.Server, finances Finances) {
 }
 
 func (s *serverAPI) Report(ctx context.Context, in *financesgrpcsrv.ReportRequest) (*financesgrpcsrv.ReportResponse, error) {
-	fmt.Print()
-	total, report, err := s.finances.Report(ctx, ReportFilter(in.GetType()))
+	total, report, err := s.finances.Report(ctx, ReportFilter(fmt.Sprintf("%s", in.GetType())))
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
