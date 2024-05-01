@@ -176,6 +176,7 @@ func (s *Storage) ListExpenses(ctx context.Context, category string) ([]models.E
 		sql = fmt.Sprintf(`
 		SELECT id, date(date) as date, description, amount, category_id FROM Expenses WHERE date(date) IS NOT NULL AND category_id = 
 		(SELECT id FROM Categories WHERE name = '%s')
+		AND strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))
 		ORDER BY date DESC;
 		`, category)
 	}
