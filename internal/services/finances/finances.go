@@ -31,7 +31,7 @@ type CategoriesProvider interface {
 
 type CategoriesReportProvider interface {
 	ListCategoriesReport(ctx context.Context, filter string) ([]models.CategoryReport, error)
-	Total() (int64, error)
+	Total(filter string) (int64, error)
 }
 
 func New(
@@ -122,7 +122,7 @@ func (f *Finances) Report(ctx context.Context, rf financesgrpc.ReportFilter) (in
 		return 0, nil, err
 	}
 
-	total, err := f.categoriesReportProvider.Total()
+	total, err := f.categoriesReportProvider.Total(rf.String())
 	if err != nil {
 		f.log.Error(err.Error())
 		return 0, nil, err
