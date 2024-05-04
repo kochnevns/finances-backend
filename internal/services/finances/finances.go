@@ -134,6 +134,7 @@ func (f *Finances) Report(ctx context.Context, rf financesgrpc.ReportFilter) (in
 		cts2 = append(cts2, financesgrpc.CategoryReport{
 			Category: ct.Name,
 			Amount:   ct.Amount,
+			Color:    ct.Color,
 		})
 	}
 	return total, cts2, nil

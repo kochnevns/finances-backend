@@ -32,6 +32,7 @@ func (f ReportFilter) String() string {
 
 type CategoryReport struct {
 	Category string
+	Color    string
 	Amount   int64
 	Percent  float64
 }
@@ -83,6 +84,7 @@ func (s *serverAPI) Report(ctx context.Context, in *financesgrpcsrv.ReportReques
 			Name:    category.Category,
 			Amount:  category.Amount,
 			Percent: category.Amount * 100 / total,
+			Color:   category.Color,
 		})
 	}
 

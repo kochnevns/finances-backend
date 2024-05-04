@@ -76,14 +76,14 @@ func (s *Storage) GetCategoryByName(_ context.Context, name string) (*models.Cat
 func (s *Storage) ListCategoriesReport(ctx context.Context, filter string) ([]models.CategoryReport, error) {
 	const op = "storage.sqlite.ListCategoriesReport"
 	sql := `
-	SELECT sum(amount) AS cat_amount, Categories.name as cat_name
+	SELECT sum(amount) AS cat_amount, Categories.name as cat_name, Categories.color as color
 	FROM Expenses JOIN Categories ON Expenses.category_id = Categories.id
 	WHERE strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))
 	GROUP BY Categories.name;`
 
 	if filter == "month" {
 		sql = `
-		SELECT sum(amount) AS cat_amount, Categories.name as cat_name
+		SELECT sum(amount) AS cat_amount, Categories.name as cat_name, Categories.color as color
 		FROM Expenses JOIN Categories ON Expenses.category_id = Categories.id
 		WHERE strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))
 		GROUP BY Categories.name;`
@@ -100,7 +100,7 @@ func (s *Storage) ListCategoriesReport(ctx context.Context, filter string) ([]mo
 
 	for rows.Next() {
 		var category models.CategoryReport
-		err = rows.Scan(&category.Amount, &category.Name)
+		err = rows.Scan(&category.Amount, &category.Name, &category.Color)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
