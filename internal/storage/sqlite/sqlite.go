@@ -168,14 +168,18 @@ func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error
 func (s *Storage) ListExpenses(ctx context.Context, category string) ([]models.Expense, int, error) {
 	const op = "storage.sqlite.ListExpenses"
 	sql := `
-	SELECT id, date(date) as date, description, amount, category_id FROM Expenses WHERE date(date) IS NOT NULL
+	SELECT e.id, date(date) as date, description, amount, category_id, c.color
+	FROM Expenses e JOIN Categories c on e.category_id = c.id
+	WHERE date(date) IS NOT NULL
 	ORDER BY date DESC LIMIT 30
 	`
 	total := 0
 
 	if category != "" {
 		sql = fmt.Sprintf(`
-		SELECT id, date(date) as date, description, amount, category_id FROM Expenses WHERE date(date) IS NOT NULL AND category_id = 
+		SELECT e.id, date(date) as date, description, amount, category_id, c.color
+		FROM Expenses e JOIN Categories c on e.category_id = c.id
+		WHERE date(date) IS NOT NULL AND category_id = 
 		(SELECT id FROM Categories WHERE name = '%s')
 		`, category)
 
@@ -200,7 +204,7 @@ func (s *Storage) ListExpenses(ctx context.Context, category string) ([]models.E
 
 	for rows.Next() {
 		var expense models.Expense
-		err = rows.Scan(&expense.ID, &expense.Date, &expense.Description, &expense.Amount, &expense.CategoryID)
+		err = rows.Scan(&expense.ID, &expense.Date, &expense.Description, &expense.Amount, &expense.CategoryID, &expense.Color)
 		if err != nil {
 			return nil, 0, fmt.Errorf("%s: %w", op, err)
 		}

@@ -89,6 +89,7 @@ func (f *Finances) ExpensesList(
 			Amount:      e.Amount,
 			Date:        e.Date,
 			Category:    e.Category,
+			Color:       e.Color,
 		})
 	}
 	return list, int64(t), nil

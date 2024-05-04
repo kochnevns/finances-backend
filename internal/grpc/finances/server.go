@@ -16,6 +16,7 @@ type Expense struct {
 	Amount      int64  // in cents
 	Date        string // YYYY-MM-DD
 	Category    string // "food", "groceries", "transport", "misc"
+	Color       string
 }
 
 type ReportFilter string
@@ -133,6 +134,7 @@ func (s *serverAPI) ExpensesList(ctx context.Context, req *financesgrpcsrv.Expen
 			Date:        expense.Date,
 			Category:    expense.Category,
 			Description: expense.Description,
+			Color:       expense.Color,
 		})
 	}
 
