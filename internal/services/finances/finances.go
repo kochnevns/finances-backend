@@ -30,8 +30,8 @@ type CategoriesProvider interface {
 }
 
 type CategoriesReportProvider interface {
-	ListCategoriesReport(ctx context.Context, filter string) ([]models.CategoryReport, error)
-	Total(filter string) (int64, error)
+	ListCategoriesReport(ctx context.Context, filter string, month int, year int) ([]models.CategoryReport, error)
+	Total(filter string, month int, year int) (int64, error)
 }
 
 func New(
@@ -115,15 +115,15 @@ func (f *Finances) CategoriesList(ctx context.Context) ([]financesgrpc.Category,
 
 func (f *Finances) CreateCategory(ctx context.Context, _ string) (string, error) { return "", nil }
 
-func (f *Finances) Report(ctx context.Context, rf financesgrpc.ReportFilter) (int64, []financesgrpc.CategoryReport, error) {
-	cts, err := f.categoriesReportProvider.ListCategoriesReport(ctx, rf.String())
-
+func (f *Finances) Report(ctx context.Context, rf financesgrpc.ReportFilter, month int, year int) (int64, []financesgrpc.CategoryReport, error) {
+	cts, err := f.categoriesReportProvider.ListCategoriesReport(ctx, rf.String(), month, year)
+	
 	if err != nil {
 		f.log.Error(err.Error())
 		return 0, nil, err
 	}
 
-	total, err := f.categoriesReportProvider.Total(rf.String())
+	total, err := f.categoriesReportProvider.Total(rf.String(), month, year)
 	if err != nil {
 		f.log.Error(err.Error())
 		return 0, nil, err

@@ -3,6 +3,7 @@ package financesgrpc
 import (
 	"context"
 	"fmt"
+	"time"
 
 	financesgrpcsrv "github.com/kochnevns/finances-protos/finances"
 	"google.golang.org/grpc"
@@ -51,6 +52,15 @@ type Finances interface {
 		Date string, // YYYY-MM-DD
 		Category string, // "food", "groceries", "transport", "misc"
 	) (err error)
+
+	// ExpenseEdit(
+	// 	ctx context.Context,
+	// 	ID int64, // expense ID in the database, not the ID in the gRPC request
+	// 	Description string,
+	// 	Amount int64, // in cents
+	// 	Date string, // YYYY-MM-DD
+	// 	Category string, // "food", "groceries", "transport", "misc"
+	// ) (err error)
 	ExpensesList(
 		ctx context.Context,
 		category string,
@@ -58,7 +68,7 @@ type Finances interface {
 
 	CreateCategory(context.Context, string) (string, error)
 	CategoriesList(context.Context) ([]Category, error)
-	Report(context.Context, ReportFilter) (int64, []CategoryReport, error)
+	Report(context.Context, ReportFilter, int, int) (int64, []CategoryReport, error)
 }
 
 type serverAPI struct {
@@ -72,8 +82,71 @@ func Register(gRPCServer *grpc.Server, finances Finances) {
 	})
 }
 
+func (s *serverAPI) MassiveReport(ctx context.Context, in *financesgrpcsrv.MassiveReportRequest) (*financesgrpcsrv.MassiveReportResponse, error) {
+	response := &financesgrpcsrv.MassiveReportResponse{
+		Monthes: []*financesgrpcsrv.ReportResponse{},
+	}
+
+	nowMonth := int(time.Now().Month())
+	nowYear := time.Now().Year()
+
+	for i := nowMonth - 3; i <= nowMonth; i++ {
+		month := i
+		year := nowYear
+		if i < 1 {
+			year--
+			month = 12 + i
+		}
+
+		total, report, err := s.finances.Report(ctx, Month, month, year)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get report: %v", err)
+		}
+
+		reportResponse := &financesgrpcsrv.ReportResponse{
+			Total: total,
+			Month: fmt.Sprintf("%02d.%04d", month, year),
+		}
+
+		var categories []*financesgrpcsrv.ReportCategory // TODO: make this an array
+
+		for _, category := range report {
+			categories = append(categories, &financesgrpcsrv.ReportCategory{
+				Name:    category.Category,
+				Amount:  category.Amount,
+				Percent: category.Amount * 100 / total,
+				Color:   category.Color,
+			})
+		}
+
+		reportResponse.Categories = categories
+
+		response.Monthes = append(response.Monthes, reportResponse)
+
+	}
+
+	return response, nil
+}
+func (s *serverAPI) ExpenseEdit(ctx context.Context, in *financesgrpcsrv.ExpenseEditRequest) (*financesgrpcsrv.ExpenseResponse, error) {
+	// err := s.finances.Expense(ctx, in.Description, in.Amount, in.Date, in.Category)
+	// if err != nil {
+	// 	return nil, status.Error(codes.Internal, err.Error())
+	// }
+	// return &financesgrpcsrv.ExpenseResponse{
+	// 	Description: in.Description,
+	// 	Amount:      in.Amount,
+	// 	Date:        in.Date,
+	// 	Category:    in.Category,
+	// }, nil
+
+	return nil, nil // TODO: implement this
+}
+
 func (s *serverAPI) Report(ctx context.Context, in *financesgrpcsrv.ReportRequest) (*financesgrpcsrv.ReportResponse, error) {
-	total, report, err := s.finances.Report(ctx, ReportFilter(fmt.Sprintf("%s", in.GetType())))
+	nowMonth := int(time.Now().Month())
+	nowYear := time.Now().Year()
+
+	total, report, err := s.finances.Report(ctx, ReportFilter(fmt.Sprintf("%s", in.GetType())), nowMonth, nowYear)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

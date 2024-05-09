@@ -6,7 +6,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/ilyakaznacheev/cleanenv v1.5.0
-	github.com/kochnevns/finances-protos v0.0.12
+	github.com/kochnevns/finances-protos v0.0.15
 	github.com/mattn/go-sqlite3 v1.14.22
 	google.golang.org/grpc v1.63.0
 )

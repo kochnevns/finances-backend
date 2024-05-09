@@ -73,21 +73,17 @@ func (s *Storage) GetCategoryByName(_ context.Context, name string) (*models.Cat
 	return &category, nil
 }
 
-func (s *Storage) ListCategoriesReport(ctx context.Context, filter string) ([]models.CategoryReport, error) {
+func (s *Storage) ListCategoriesReport(ctx context.Context, filter string, month int, year int) ([]models.CategoryReport, error) {
 	const op = "storage.sqlite.ListCategoriesReport"
+	strMonth := fmt.Sprintf("%02d", month)
+	strYear := fmt.Sprintf("%04d", year)
+
 	sql := `
 	SELECT sum(amount) AS cat_amount, Categories.name as cat_name, Categories.color as color
 	FROM Expenses JOIN Categories ON Expenses.category_id = Categories.id
-	WHERE strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))
+	WHERE strftime('%m', date) = $1 AND strftime('%Y', date) = $2
 	GROUP BY Categories.name;`
 
-	if filter == "month" {
-		sql = `
-		SELECT sum(amount) AS cat_amount, Categories.name as cat_name, Categories.color as color
-		FROM Expenses JOIN Categories ON Expenses.category_id = Categories.id
-		WHERE strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))
-		GROUP BY Categories.name;`
-	}
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
@@ -95,12 +91,16 @@ func (s *Storage) ListCategoriesReport(ctx context.Context, filter string) ([]mo
 	}
 
 	var categories []models.CategoryReport
+	rows, err := stmt.QueryContext(ctx, strMonth, strYear)
 
-	rows, _ := stmt.QueryContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
 
 	for rows.Next() {
 		var category models.CategoryReport
 		err = rows.Scan(&category.Amount, &category.Name, &category.Color)
+
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
@@ -110,12 +110,14 @@ func (s *Storage) ListCategoriesReport(ctx context.Context, filter string) ([]mo
 	return categories, nil
 }
 
-func (s *Storage) Total(filter string) (int64, error) {
+func (s *Storage) Total(filter string, month int, year int) (int64, error) {
 	const op = "storage.sqlite.TotalAmount"
-	sql := `SELECT sum(amount) FROM Expenses`
-	if filter == "month" {
-		sql = `SELECT COALESCE(sum(amount), 0) FROM Expenses WHERE strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))`
-	}
+
+	strMonth := fmt.Sprintf("%02d", month)
+	strYear := fmt.Sprintf("%04d", year)
+
+	sql := `SELECT COALESCE(sum(amount), 0) FROM Expenses WHERE strftime('%m', date) = $1 AND strftime('%Y', date) = $2`
+
 	stmt, err := s.db.Prepare(sql)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
@@ -124,7 +126,7 @@ func (s *Storage) Total(filter string) (int64, error) {
 
 	var totalAmount int64
 
-	err = stmt.QueryRow().Scan(&totalAmount)
+	err = stmt.QueryRow(strMonth, strYear).Scan(&totalAmount)
 
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
