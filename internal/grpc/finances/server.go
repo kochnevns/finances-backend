@@ -64,6 +64,8 @@ type Finances interface {
 	ExpensesList(
 		ctx context.Context,
 		category string,
+		month int64,
+		year int64,
 	) (list []Expense, totalAmount int64, err error)
 
 	CreateCategory(context.Context, string) (string, error)
@@ -192,7 +194,7 @@ func (s *serverAPI) Expense(
 
 func (s *serverAPI) ExpensesList(ctx context.Context, req *financesgrpcsrv.ExpensesListRequest) (*financesgrpcsrv.ExpensesListResponse, error) {
 
-	list, totalAmount, err := s.finances.ExpensesList(ctx, req.GetCategory())
+	list, totalAmount, err := s.finances.ExpensesList(ctx, req.GetCategory(), req.GetMonth(), req.GetYear())
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

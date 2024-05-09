@@ -167,10 +167,10 @@ func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error
 	return nil
 }
 
-func (s *Storage) ListExpenses(ctx context.Context, category string) ([]models.Expense, int, error) {
+func (s *Storage) ListExpenses(ctx context.Context, category string, month, year int64) ([]models.Expense, int, error) {
 	const op = "storage.sqlite.ListExpenses"
 	sql := `
-	SELECT e.id, date(date) as date, description, amount, category_id, c.color
+	SELECT e.id, date(date) as date, description, amount, category_id, c.color, $1, $2
 	FROM Expenses e JOIN Categories c on e.category_id = c.id
 	WHERE date(date) IS NOT NULL
 	ORDER BY date DESC LIMIT 30
@@ -179,14 +179,14 @@ func (s *Storage) ListExpenses(ctx context.Context, category string) ([]models.E
 
 	if category != "" {
 		sql = fmt.Sprintf(`
-		SELECT e.id, date(date) as date, description, amount, category_id, c.color
+		SELECT e.id, date(date) as date, description, amount, category_id, c.color, '1', '2'
 		FROM Expenses e JOIN Categories c on e.category_id = c.id
 		WHERE date(date) IS NOT NULL AND category_id = 
 		(SELECT id FROM Categories WHERE name = '%s')
 		`, category)
 
-		sql += `AND strftime('%m', date) = strftime('%m', datetime('now')) AND strftime('%Y', date) = strftime('%Y', datetime('now'))
-		ORDER BY date DESC;`
+		sql += `AND strftime('%m', date) = $1 AND strftime('%Y', date) = $2
+		ORDER BY date DESC`
 	}
 	stmt, err := s.db.Prepare(sql) // nolint: errcheck, gosec
 	if err != nil {
@@ -196,7 +196,7 @@ func (s *Storage) ListExpenses(ctx context.Context, category string) ([]models.E
 	defer stmt.Close() // nolint: errcheck
 
 	var expenses []models.Expense
-	rows, err := stmt.Query() // nolint: errcheck
+	rows, err := stmt.Query(fmt.Sprintf("%02d", month), fmt.Sprintf("%04d", year)) // nolint: errcheck
 
 	if err != nil {
 		return nil, 0, fmt.Errorf("%s: %w", op, err)
@@ -206,7 +206,8 @@ func (s *Storage) ListExpenses(ctx context.Context, category string) ([]models.E
 
 	for rows.Next() {
 		var expense models.Expense
-		err = rows.Scan(&expense.ID, &expense.Date, &expense.Description, &expense.Amount, &expense.CategoryID, &expense.Color)
+		var dummy string
+		err = rows.Scan(&expense.ID, &expense.Date, &expense.Description, &expense.Amount, &expense.CategoryID, &expense.Color, &dummy, &dummy)
 		if err != nil {
 			return nil, 0, fmt.Errorf("%s: %w", op, err)
 		}

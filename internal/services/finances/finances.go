@@ -22,7 +22,7 @@ type ExpensesSaver interface {
 }
 
 type ExpensesProvider interface {
-	ListExpenses(ctx context.Context, category string) ([]models.Expense, int, error)
+	ListExpenses(ctx context.Context, category string, month, year int64) ([]models.Expense, int, error)
 }
 
 type CategoriesProvider interface {
@@ -74,9 +74,9 @@ func (f *Finances) Expense(
 }
 
 func (f *Finances) ExpensesList(
-	ctx context.Context, category string,
+	ctx context.Context, category string, month int64, year int64,
 ) (list []financesgrpc.Expense, total int64, err error) {
-	l, t, err := f.expensesProvider.ListExpenses(ctx, category)
+	l, t, err := f.expensesProvider.ListExpenses(ctx, category, month, year)
 
 	if err != nil {
 		f.log.Error(err.Error())
@@ -117,7 +117,7 @@ func (f *Finances) CreateCategory(ctx context.Context, _ string) (string, error)
 
 func (f *Finances) Report(ctx context.Context, rf financesgrpc.ReportFilter, month int, year int) (int64, []financesgrpc.CategoryReport, error) {
 	cts, err := f.categoriesReportProvider.ListCategoriesReport(ctx, rf.String(), month, year)
-	
+
 	if err != nil {
 		f.log.Error(err.Error())
 		return 0, nil, err
