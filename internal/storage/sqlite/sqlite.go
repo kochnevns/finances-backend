@@ -172,8 +172,8 @@ func (s *Storage) ListExpenses(ctx context.Context, category string, month, year
 	sql := `
 	SELECT e.id, date(date) as date, description, amount, category_id, c.color, $1, $2
 	FROM Expenses e JOIN Categories c on e.category_id = c.id
-	WHERE date(date) IS NOT NULL
-	ORDER BY date DESC LIMIT 30
+	WHERE date(date) IS NOT NULL AND strftime('%m', date) = strftime('%m', 'now') AND strftime('%Y', date) = strftime('%Y', 'now')
+	ORDER BY date DESC
 	`
 	total := 0
 
