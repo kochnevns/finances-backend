@@ -205,6 +205,7 @@ func (s *serverAPI) ExpensesList(ctx context.Context, req *financesgrpcsrv.Expen
 
 	for _, expense := range list {
 		respList = append(respList, &financesgrpcsrv.Expense{
+			Id:          expense.ID,
 			Amount:      expense.Amount,
 			Date:        expense.Date,
 			Category:    expense.Category,

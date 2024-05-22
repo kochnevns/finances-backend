@@ -85,6 +85,7 @@ func (f *Finances) ExpensesList(
 
 	for _, e := range l {
 		list = append(list, financesgrpc.Expense{
+			ID:          int64(e.ID),
 			Description: e.Description,
 			Amount:      e.Amount,
 			Date:        e.Date,

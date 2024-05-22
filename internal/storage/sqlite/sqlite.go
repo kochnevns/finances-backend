@@ -170,7 +170,7 @@ func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error
 func (s *Storage) ListExpenses(ctx context.Context, category string, month, year int64) ([]models.Expense, int, error) {
 	const op = "storage.sqlite.ListExpenses"
 	sql := `
-	SELECT e.id, date(date) as date, description, amount, category_id, c.color, $1, $2
+	SELECT e.id as id, date(date) as date, description, amount, category_id, c.color, $1, $2
 	FROM Expenses e JOIN Categories c on e.category_id = c.id
 	WHERE date(date) IS NOT NULL AND strftime('%m', date) = strftime('%m', 'now') AND strftime('%Y', date) = strftime('%Y', 'now')
 	ORDER BY date DESC
@@ -179,7 +179,7 @@ func (s *Storage) ListExpenses(ctx context.Context, category string, month, year
 
 	if category != "" {
 		sql = fmt.Sprintf(`
-		SELECT e.id, date(date) as date, description, amount, category_id, c.color, '1', '2'
+		SELECT e.id as id, date(date) as date, description, amount, category_id, c.color, '1', '2'
 		FROM Expenses e JOIN Categories c on e.category_id = c.id
 		WHERE date(date) IS NOT NULL AND category_id = 
 		(SELECT id FROM Categories WHERE name = '%s')
