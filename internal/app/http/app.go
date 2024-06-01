@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rs/cors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -40,6 +41,16 @@ func (a *App) RunHTTP() error {
 	// Register gRPC server endpoint
 	// Note: Make sure the gRPC server is running properly and accessible
 	mux := runtime.NewServeMux()
+
+	h := cors.New(cors.Options{
+		AllowOriginFunc:  func(origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"ACCEPT", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}).Handler(mux)
+
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	err := gw.RegisterFinancesHandlerFromEndpoint(ctx, mux, grpcServerEnpoint, opts)
 	if err != nil {
@@ -48,7 +59,7 @@ func (a *App) RunHTTP() error {
 
 	a.log.Info("Starting HTTP server", slog.String("port", strconv.Itoa(a.port))) // log
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", a.port), mux); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", a.port), h); err != nil {
 		return err
 	}
 

@@ -51,6 +51,7 @@ type Finances interface {
 		Amount int64, // in cents
 		Date string, // YYYY-MM-DD
 		Category string, // "food", "groceries", "transport", "misc"
+		Id int64, // expense ID in the database, not the ID in the gRPC request
 	) (err error)
 
 	// ExpenseEdit(
@@ -183,6 +184,7 @@ func (s *serverAPI) Expense(
 		in.Amount,
 		in.Date,
 		in.Category,
+		in.GetId(),
 	)
 
 	if err != nil {

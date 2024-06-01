@@ -6,7 +6,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/ilyakaznacheev/cleanenv v1.5.0
-	github.com/kochnevns/finances-protos v0.0.16
+	github.com/kochnevns/finances-protos v0.0.17
 	github.com/mattn/go-sqlite3 v1.14.22
 	google.golang.org/grpc v1.63.0
 )
@@ -14,6 +14,7 @@ require (
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/rs/cors v1.11.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

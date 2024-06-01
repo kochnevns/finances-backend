@@ -167,6 +167,46 @@ func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error
 	return nil
 }
 
+func (s *Storage) UpdateExpense(ctx context.Context, expense models.Expense) error {
+	const op = "storage.sqlite.SaveExpense"
+
+	category, _ := s.GetCategoryByName(ctx, expense.Category)
+
+	if category == nil {
+		category = &models.Category{
+			ID:       0,
+			Name:     "TEST",
+			ImageURL: "",
+		}
+	}
+
+	stmt, err := s.db.Prepare(`
+		UPDATE Expenses
+		SET date=?,
+		description=?,
+		amount=?, category_id=?
+		WHERE id=?;
+	`)
+
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	fmt.Println(expense)
+
+	_, err = stmt.ExecContext(ctx, expense.Date, expense.Description, expense.Amount, category.ID, expense.ID)
+	if err != nil {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
+			return fmt.Errorf("%s: %w", op, storage.ErrUserExists)
+		}
+
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (s *Storage) ListExpenses(ctx context.Context, category string, month, year int64) ([]models.Expense, int, error) {
 	const op = "storage.sqlite.ListExpenses"
 	sql := `

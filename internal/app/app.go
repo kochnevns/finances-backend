@@ -25,7 +25,7 @@ func New(
 		panic(err)
 	}
 
-	financesService := finances.New(log, storage, storage, storage, storage)
+	financesService := finances.New(log, storage, storage, storage, storage, storage)
 
 	grpcApp := grpcapp.New(log, financesService, grpcPort)
 	httpApp := httpapp.New(httpPort, grpcPort, log)

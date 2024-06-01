@@ -11,6 +11,7 @@ import (
 type Finances struct {
 	log                      *slog.Logger
 	expenseSaver             ExpensesSaver
+	expenseUpdater           ExpenseUpdater
 	expensesProvider         ExpensesProvider
 	categoriesReportProvider CategoriesReportProvider
 	categoriesProvider       CategoriesProvider
@@ -19,6 +20,10 @@ type Finances struct {
 //go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=URLSaver
 type ExpensesSaver interface {
 	SaveExpense(ctx context.Context, expense models.Expense) error
+}
+
+type ExpenseUpdater interface {
+	UpdateExpense(ctx context.Context, expense models.Expense) error
 }
 
 type ExpensesProvider interface {
@@ -37,12 +42,14 @@ type CategoriesReportProvider interface {
 func New(
 	log *slog.Logger,
 	expenseSaver ExpensesSaver, // TODO: use mock
+	expensesUpdater ExpenseUpdater,
 	expensesProvider ExpensesProvider, // TODO: use mock
 	categoriesReportProvider CategoriesReportProvider,
 	categoriesProvider CategoriesProvider, // TODO: use mock
 ) *Finances {
 	return &Finances{
 		expenseSaver:             expenseSaver,
+		expenseUpdater:           expensesUpdater,
 		expensesProvider:         expensesProvider,
 		categoriesReportProvider: categoriesReportProvider,
 		categoriesProvider:       categoriesProvider,
@@ -56,18 +63,27 @@ func (f *Finances) Expense(
 	Amount int64, // in cents
 	Date string, // YYYY-MM-DD
 	Category string, // "food", "groceries", "transport", "misc"
+	Id int64,
 ) (err error) {
 	expense := models.Expense{
+		ID:          Id,
 		Description: Description,
 		Amount:      Amount,
 		Date:        Date,
 		Category:    Category,
 	}
 
-	err = f.expenseSaver.SaveExpense(ctx, expense)
-	if err != nil {
-		f.log.Error(err.Error())
-		return err
+	if Id == 0 {
+		err := f.expenseSaver.SaveExpense(ctx, expense)
+		if err != nil {
+			f.log.Error(err.Error())
+			return err
+		}
+	} else {
+		if err := f.expenseUpdater.UpdateExpense(ctx, expense); err != nil {
+			f.log.Error(err.Error())
+			return err
+		}
 	}
 
 	return nil
