@@ -30,8 +30,17 @@ func New(
 ) *App {
 	loggingOpts := []logging.Option{
 		logging.WithLogOnEvents(
-			//logging.StartCall, logging.FinishCall,
-			logging.StartCall, logging.LoggableEvent(logging.LevelError),
+			logging.StartCall, logging.FinishCall,
+		),
+		logging.WithDisableLoggingFields(
+			logging.MethodTypeFieldKey,
+			logging.ComponentFieldKey,
+			"protocol",
+			"grpc",
+			"server",
+			"grpc.method_type",
+			"grpc_start_time",
+			"grpc.service",
 		),
 		// Add any other option (check functions starting with logging.With).
 	}

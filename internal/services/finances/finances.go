@@ -37,6 +37,7 @@ type CategoriesProvider interface {
 type CategoriesReportProvider interface {
 	ListCategoriesReport(ctx context.Context, filter string, month int, year int) ([]models.CategoryReport, error)
 	Total(filter string, month int, year int) (int64, error)
+	MedianAndMiddle(ctx context.Context, month int, year int) (int64, int64, error)
 }
 
 func New(
@@ -132,18 +133,18 @@ func (f *Finances) CategoriesList(ctx context.Context) ([]financesgrpc.Category,
 
 func (f *Finances) CreateCategory(ctx context.Context, _ string) (string, error) { return "", nil }
 
-func (f *Finances) Report(ctx context.Context, rf financesgrpc.ReportFilter, month int, year int) (int64, []financesgrpc.CategoryReport, error) {
+func (f *Finances) Report(ctx context.Context, rf financesgrpc.ReportFilter, month int, year int) (int64, int64, int64, []financesgrpc.CategoryReport, error) {
 	cts, err := f.categoriesReportProvider.ListCategoriesReport(ctx, rf.String(), month, year)
 
 	if err != nil {
 		f.log.Error(err.Error())
-		return 0, nil, err
+		return 0, 0, 0, nil, err
 	}
 
 	total, err := f.categoriesReportProvider.Total(rf.String(), month, year)
 	if err != nil {
 		f.log.Error(err.Error())
-		return 0, nil, err
+		return 0, 0, 0, nil, err
 	}
 
 	var cts2 []financesgrpc.CategoryReport
@@ -155,5 +156,12 @@ func (f *Finances) Report(ctx context.Context, rf financesgrpc.ReportFilter, mon
 			Color:    ct.Color,
 		})
 	}
-	return total, cts2, nil
+
+	middle, median, err := f.categoriesReportProvider.MedianAndMiddle(ctx, month, year)
+
+	if err != nil {
+		return 0, 0, 0, nil, err
+	}
+
+	return total, middle, median, cts2, nil
 }

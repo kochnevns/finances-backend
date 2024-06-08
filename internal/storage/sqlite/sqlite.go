@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/mattn/go-sqlite3"
 
@@ -133,6 +134,55 @@ func (s *Storage) Total(filter string, month int, year int) (int64, error) {
 	}
 
 	return totalAmount, nil
+}
+
+func (s *Storage) MedianAndMiddle(ctx context.Context, month int, year int) (int64, int64, error) {
+	const op = "storage.sqlite.Median"
+
+	var sum int
+	var rowsCount int
+
+	strMonth := fmt.Sprintf("%02d", month)
+	strYear := fmt.Sprintf("%04d", year)
+
+	sql := `SELECT sum(amount) AS day_amount, date as day
+	FROM Expenses
+	WHERE strftime('%m', date) = $1 AND strftime('%Y', date) = $2
+	GROUP BY day;`
+
+	stmt, _ := s.db.Prepare(sql)
+
+	rows, err := stmt.QueryContext(ctx, strMonth, strYear)
+
+	if err != nil {
+		return -1, -1, fmt.Errorf("%s: %w", op, err)
+	}
+
+	amounts := make([]int, 0)
+	for rows.Next() {
+		var daily models.DailyStats
+
+		err = rows.Scan(&daily.Total, &daily.Date)
+
+		if err != nil {
+			return -1, -1, fmt.Errorf("%s: %w", op, err)
+		}
+
+		sum += daily.Total
+		rowsCount++
+
+		amounts = append(amounts, daily.Total)
+	}
+
+	if rowsCount == 0 {
+		return -1, -1, nil
+	}
+
+	middle := int64(sum / rowsCount)
+
+	sort.Ints(amounts)
+
+	return middle, int64(amounts[len(amounts)/2]), nil
 }
 
 func (s *Storage) SaveExpense(ctx context.Context, expense models.Expense) error {

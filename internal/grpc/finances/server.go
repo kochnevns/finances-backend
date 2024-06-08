@@ -71,7 +71,7 @@ type Finances interface {
 
 	CreateCategory(context.Context, string) (string, error)
 	CategoriesList(context.Context) ([]Category, error)
-	Report(context.Context, ReportFilter, int, int) (int64, []CategoryReport, error)
+	Report(context.Context, ReportFilter, int, int) (int64, int64, int64, []CategoryReport, error)
 }
 
 type serverAPI struct {
@@ -101,7 +101,7 @@ func (s *serverAPI) MassiveReport(ctx context.Context, in *financesgrpcsrv.Massi
 			month = 12 + i
 		}
 
-		total, report, err := s.finances.Report(ctx, Month, month, year)
+		total, middle, median, report, err := s.finances.Report(ctx, Month, month, year)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get report: %v", err)
 		}
@@ -123,9 +123,10 @@ func (s *serverAPI) MassiveReport(ctx context.Context, in *financesgrpcsrv.Massi
 		}
 
 		reportResponse.Categories = categories
+		reportResponse.Average = middle
+		reportResponse.Median = median
 
 		response.Monthes = append(response.Monthes, reportResponse)
-
 	}
 
 	return response, nil
@@ -149,7 +150,7 @@ func (s *serverAPI) Report(ctx context.Context, in *financesgrpcsrv.ReportReques
 	nowMonth := int(time.Now().Month())
 	nowYear := time.Now().Year()
 
-	total, report, err := s.finances.Report(ctx, ReportFilter(fmt.Sprintf("%s", in.GetType())), nowMonth, nowYear)
+	total, _, _, report, err := s.finances.Report(ctx, ReportFilter(fmt.Sprintf("%s", in.GetType())), nowMonth, nowYear)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
