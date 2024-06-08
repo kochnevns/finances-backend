@@ -145,7 +145,7 @@ func (s *Storage) MedianAndMiddle(ctx context.Context, month int, year int) (int
 	strMonth := fmt.Sprintf("%02d", month)
 	strYear := fmt.Sprintf("%04d", year)
 
-	sql := `SELECT sum(amount) AS day_amount, date as day
+	sql := `SELECT sum(amount) AS day_amount, strftime('%d', date) as day
 	FROM Expenses
 	WHERE strftime('%m', date) = $1 AND strftime('%Y', date) = $2
 	GROUP BY day;`
