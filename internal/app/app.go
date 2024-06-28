@@ -5,6 +5,7 @@ import (
 
 	grpcapp "github.com/kochnevns/finances-backend/internal/app/grpc"
 	httpapp "github.com/kochnevns/finances-backend/internal/app/http"
+	"github.com/kochnevns/finances-backend/internal/imcache"
 	"github.com/kochnevns/finances-backend/internal/services/finances"
 	"github.com/kochnevns/finances-backend/internal/storage/sqlite"
 )
@@ -25,7 +26,9 @@ func New(
 		panic(err)
 	}
 
-	financesService := finances.New(log, storage, storage, storage, storage, storage)
+	imcache := imcache.NewIMCache()
+
+	financesService := finances.New(log, storage, storage, storage, storage, storage, imcache)
 
 	grpcApp := grpcapp.New(log, financesService, grpcPort)
 	httpApp := httpapp.New(httpPort, grpcPort, log)

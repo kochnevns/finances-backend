@@ -178,7 +178,6 @@ func (s *serverAPI) Expense(
 	ctx context.Context,
 	in *financesgrpcsrv.ExpenseRequest,
 ) (*financesgrpcsrv.ExpenseResponse, error) {
-
 	err := s.finances.Expense(
 		ctx,
 		in.Description,
@@ -204,7 +203,7 @@ func (s *serverAPI) ExpensesList(ctx context.Context, req *financesgrpcsrv.Expen
 	}
 
 	rsp := &financesgrpcsrv.ExpensesListResponse{}
-	var respList []*financesgrpcsrv.Expense
+	respList := make([]*financesgrpcsrv.Expense, 0, len(list))
 
 	for _, expense := range list {
 		respList = append(respList, &financesgrpcsrv.Expense{
