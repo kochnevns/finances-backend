@@ -80,6 +80,8 @@ func (f *Finances) Expense(
 		Category:    Category,
 	}
 
+	f.cache.Flush()
+
 	if Id == 0 {
 		err := f.expenseSaver.SaveExpense(ctx, expense)
 		if err != nil {
