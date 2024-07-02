@@ -93,7 +93,7 @@ func (s *serverAPI) MassiveReport(ctx context.Context, in *financesgrpcsrv.Massi
 	nowMonth := int(time.Now().Month())
 	nowYear := time.Now().Year()
 
-	for i := nowMonth - 3; i <= nowMonth; i++ {
+	for i := nowMonth - 12; i <= nowMonth; i++ {
 		month := i
 		year := nowYear
 		if i < 1 {
