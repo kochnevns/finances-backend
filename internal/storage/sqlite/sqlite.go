@@ -311,7 +311,13 @@ func (s *Storage) ListExpenses(ctx context.Context, category string, month, year
 }
 func (s *Storage) ListCategories(ctx context.Context) ([]models.Category, error) {
 	const op = "storage.sqlite.CategoriesList"
-	stmt, err := s.db.Prepare("SELECT id, name FROM Categories")
+	stmt, err := s.db.Prepare(`
+		SELECT DISTINCT c.id as id, c.name as name FROM Categories c JOIN (
+			SELECT category_id, count(category_id) as cnt From Expenses e
+			GROUP BY e.category_id
+		) e
+		ON c.id = e.category_id
+		ORDER BY e.cnt DESC`)
 
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
